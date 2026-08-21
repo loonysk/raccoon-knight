@@ -271,9 +271,21 @@ function moveBody(o, w, h) {
   }
 }
 
-/* ---------------- ввод ---------------- */
+/* ---------------- ввод ----------------
+   Нажатия копятся отдельным «фронтом»: короткий тап между двумя кадрами
+   иначе терялся бы, потому что игровой цикл не увидел бы удержания.
+   Удержание нужно отдельно — от него зависит высота прыжка.
+------------------------------------------ */
 const K = {};
+const HOLD = { left: false, right: false, jump: false, attack: false, gun: false };
+const PRESS = { jump: false, attack: false, gun: false };   // фронт, гасится в update
+
 addEventListener('keydown', e => {
+  if (!e.repeat) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') PRESS.jump = true;
+    if (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'Enter') PRESS.attack = true;
+    if (e.code === 'KeyK' || e.code === 'KeyC') PRESS.gun = true;
+  }
   K[e.code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (e.code === 'Escape' || e.code === 'KeyP') { if (G.mode === MODE.PLAY || G.mode === MODE.PAUSE) togglePause(); }
@@ -281,24 +293,64 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { K[e.code] = false; });
 
-const TOUCH = { left: false, right: false, jump: false, attack: false, gun: false };
+/* какой указатель какую кнопку держит — чтобы палец, съехавший с кнопки,
+   не оставлял её нажатой навсегда */
+const pointerOn = new Map();
+
 document.querySelectorAll('[data-act]').forEach(btn => {
   const act = btn.dataset.act;
-  const on = e => { e.preventDefault(); TOUCH[act] = true; btn.classList.add('on'); };
-  const off = e => { e.preventDefault(); TOUCH[act] = false; btn.classList.remove('on'); };
-  btn.addEventListener('pointerdown', on);
-  btn.addEventListener('pointerup', off);
-  btn.addEventListener('pointercancel', off);
-  btn.addEventListener('pointerleave', off);
-});
-function clearTouch() { TOUCH.left = TOUCH.right = TOUCH.jump = TOUCH.attack = TOUCH.gun = false; document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on')); }
 
-function inLeft() { return K.ArrowLeft || K.KeyA || TOUCH.left; }
-function inRight() { return K.ArrowRight || K.KeyD || TOUCH.right; }
-function inJump() { return K.Space || K.ArrowUp || K.KeyW || TOUCH.jump; }
-function inAtk() { return K.KeyJ || K.KeyX || K.Enter || TOUCH.attack; }
-function inGun() { return K.KeyK || K.KeyC || TOUCH.gun; }
-let jumpLatch = false, atkLatch = false, gunLatch = false;
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { btn.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
+    pointerOn.set(e.pointerId, act);
+    HOLD[act] = true;
+    if (act in PRESS) PRESS[act] = true;
+    btn.classList.add('on');
+  });
+
+  const release = e => {
+    if (pointerOn.get(e.pointerId) !== act) return;
+    pointerOn.delete(e.pointerId);
+    HOLD[act] = false;
+    btn.classList.remove('on');
+  };
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointercancel', release);
+  btn.addEventListener('lostpointercapture', release);
+});
+
+/* страховка: если указатель пропал мимо кнопки, всё равно отпускаем */
+const globalRelease = e => {
+  const act = pointerOn.get(e.pointerId);
+  if (!act) return;
+  pointerOn.delete(e.pointerId);
+  HOLD[act] = false;
+  const b = document.querySelector('[data-act="' + act + '"]');
+  if (b) b.classList.remove('on');
+};
+addEventListener('pointerup', globalRelease);
+addEventListener('pointercancel', globalRelease);
+addEventListener('blur', () => {
+  pointerOn.clear();
+  for (const k in HOLD) HOLD[k] = false;
+  for (const k in K) K[k] = false;
+  document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on'));
+});
+
+function clearTouch() {
+  pointerOn.clear();
+  for (const k in HOLD) HOLD[k] = false;
+  for (const k in PRESS) PRESS[k] = false;
+  document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on'));
+}
+
+function inLeft() { return K.ArrowLeft || K.KeyA || HOLD.left; }
+function inRight() { return K.ArrowRight || K.KeyD || HOLD.right; }
+function inJump() { return K.Space || K.ArrowUp || K.KeyW || HOLD.jump; }
+
+/* совместимость со старыми тестами и dev-утилитами */
+const TOUCH = HOLD;
 
 /* ---------------- вспомогательное ---------------- */
 function spark(x, y, n, col, spread) {
@@ -364,9 +416,10 @@ function update() {
   for (const k in hero.buffs) if (hero.buffs[k] > 0) hero.buffs[k]--;
   if (G.t % 10 === 0) renderBuffs();
 
-  const a = inAtk();
-  if (a && !atkLatch && hero.atk <= 0) { hero.atk = hero.atkLen = Math.round(26 * (1 - G.tal.atkspd * .22)); hero.atkHit = false; }
-  atkLatch = a;
+  if (PRESS.attack) {
+    PRESS.attack = false;
+    if (hero.atk <= 0) { hero.atk = hero.atkLen = Math.round(26 * (1 - G.tal.atkspd * .22)); hero.atkHit = false; }
+  }
   if (hero.atk > 0) hero.atk--;
 
   let mv = 0;
@@ -379,8 +432,7 @@ function update() {
   const jm = (boots ? 1.08 : 1) * (1 + G.tal.jump * .07);
   const jUp = JUMP * jm, j2Up = JUMP2 * jm;
   const j = inJump();
-  if (j && !jumpLatch) hero.buf = BUFFER;
-  jumpLatch = j;
+  if (PRESS.jump) { PRESS.jump = false; hero.buf = BUFFER; }
   if (hero.buf > 0) hero.buf--;
   if (hero.coyote > 0) hero.coyote--;
   if (hero.buf > 0) {
@@ -396,14 +448,14 @@ function update() {
   /* пистоль */
   if (G.gunCd > 0) G.gunCd--;
   if (G.flash > 0) G.flash--;
-  const gfire = inGun();
-  if (G.gunDmg > 0 && gfire && !gunLatch && G.gunCd <= 0) {
+  const gfire = PRESS.gun;
+  PRESS.gun = false;
+  if (G.gunDmg > 0 && gfire && G.gunCd <= 0) {
     bolts.push({ x: hero.x + hero.dir * 16, y: hero.y - 24, vx: hero.dir * 5.4, life: 110, anim: 0, dir: hero.dir });
     G.gunCd = Math.round(40 * (1 - G.tal.atkspd * .18)); G.flash = 6;
     spark(hero.x + hero.dir * 20, hero.y - 24, 5, '#ffd23f', 1.6);
     G.shake = Math.max(G.shake, 2.5);
   }
-  gunLatch = gfire;
 
   hero.vy = Math.min(MAXFALL, hero.vy + GRAV);
   const wasGround = hero.onGround;
