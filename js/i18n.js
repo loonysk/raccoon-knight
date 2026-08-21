@@ -27,6 +27,9 @@ const LANGS = {
 
     cpTitle: 'Контрольная точка', cpSub: 'прогресс сохранён',
     fell: 'Провалился!', died: 'Ты пал…', backToCp: 'откат к контрольной точке',
+    deathSub: 'Всё, что пройдено после флага, придётся пройти заново',
+    toCheckpoint: 'НА КОНТРОЛЬНУЮ ТОЧКУ', startOver: 'НАЧАТЬ СНАЧАЛА',
+    deathsSoFar: 'Смертей за забег',
     shieldBreak: 'Щит разбит', shieldBreakSub: 'удар поглощён',
 
     puHeart: 'Сердце', puHeartSub: '+1 к здоровью',
@@ -87,6 +90,9 @@ const LANGS = {
 
     cpTitle: 'Checkpoint', cpSub: 'progress saved',
     fell: 'You fell!', died: 'You died…', backToCp: 'rolled back to checkpoint',
+    deathSub: 'Everything past the flag has to be done again',
+    toCheckpoint: 'TO CHECKPOINT', startOver: 'START OVER',
+    deathsSoFar: 'Deaths this run',
     shieldBreak: 'Shield broken', shieldBreakSub: 'one hit absorbed',
 
     puHeart: 'Heart', puHeartSub: '+1 health',

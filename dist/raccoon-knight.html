@@ -2,11 +2,12 @@
 <style>
 /* ---------- база ---------- */
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#0a0d12;
+  overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;touch-action:none}
 
-#stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+#stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
 
 #game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -17,7 +18,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 #hud *{pointer-events:auto}
 
 /* ===================== ЛЕВЫЙ ВЕРХ ===================== */
-.hud-tl{position:absolute;left:4em;top:1.6em;display:flex;align-items:flex-start;gap:1.8em;
+.hud-tl{position:absolute;left:max(4em,env(safe-area-inset-left));top:1.6em;display:flex;align-items:flex-start;gap:1.8em;
   font-size:var(--u)}
 
 .portrait{position:relative;width:12em;height:12em;border-radius:1.2em;
@@ -65,7 +66,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* ===================== ПРАВЫЙ ВЕРХ ===================== */
-.hud-tr{position:absolute;right:2.5em;top:2.2em;display:flex;align-items:center;gap:1.2em;
+.hud-tr{position:absolute;right:max(2.5em,env(safe-area-inset-right));top:2.2em;display:flex;align-items:center;gap:1.2em;
   font-size:var(--u)}
 .pill{display:flex;align-items:center;gap:.7em;height:5.8em;padding:0 1.7em 0 1em;
   border-radius:2.9em;background:rgba(14,19,28,.55);
@@ -75,14 +76,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 .pill span{color:#fff;font-weight:700;font-size:2.75em;line-height:1;letter-spacing:.02em;
   text-shadow:0 .06em .12em rgba(0,0,0,.95),0 0 .2em rgba(0,0,0,.7)}
 
-.btn-ico{width:6.4em;height:6.4em;border-radius:1.7em;background:rgba(14,19,28,.5);
+.btn-ico{font-size:inherit;width:6.4em;height:6.4em;min-width:38px;min-height:38px;border-radius:1.7em;background:rgba(14,19,28,.5);
   border:.3em solid rgba(255,255,255,.72);display:grid;place-items:center;cursor:pointer;
   box-shadow:0 .3em .6em rgba(0,0,0,.35);transition:transform .07s,background .07s}
 .btn-ico:active{transform:scale(.94);background:rgba(255,255,255,.2)}
 .btn-ico svg{width:4em;height:4em;fill:#ffd970;color:#ffd970;
   filter:drop-shadow(0 .12em .15em rgba(0,0,0,.6))}
+.btn-ico.fs svg{fill:#cfe0ec;color:#cfe0ec;width:3.7em;height:3.7em}
+.btn-ico.fs .fs-out{display:none}
+.btn-ico.fs.is-on .fs-in{display:none}
+.btn-ico.fs.is-on .fs-out{display:block}
 
-.btn-pause{width:6.4em;height:6.4em;border-radius:1.7em;background:rgba(14,19,28,.5);
+.btn-pause{font-size:inherit;width:6.4em;height:6.4em;min-width:38px;min-height:38px;border-radius:1.7em;background:rgba(14,19,28,.5);
   border:.3em solid rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;
   gap:.7em;cursor:pointer;box-shadow:0 .3em .6em rgba(0,0,0,.35)}
 .btn-pause i{width:.8em;height:3em;border-radius:.2em;background:#fff;display:block}
@@ -133,17 +138,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
   border-left:calc(var(--u)*.16) solid rgba(255,255,255,.18);padding-left:calc(var(--u)*1.1)}
 
 /* ===================== УПРАВЛЕНИЕ ===================== */
-.hud-bl,.hud-br{position:absolute;bottom:9.4em;display:flex;align-items:center;font-size:var(--u)}
-.hud-bl{left:7.6em;gap:5.1em}
-.hud-br{right:9.6em;gap:4.9em}
+.hud-bl,.hud-br{position:absolute;bottom:max(7em,env(safe-area-inset-bottom));display:flex;align-items:center;font-size:var(--u)}
+.hud-bl{left:max(6em,env(safe-area-inset-left));gap:5.1em}
+.hud-br{right:max(6em,env(safe-area-inset-right));gap:4.9em}
 
-.oct,.rnd{background:rgba(150,170,190,.16);border:.3em solid rgba(255,255,255,.62);
+.oct,.rnd{font-size:inherit;background:rgba(150,170,190,.16);border:.3em solid rgba(255,255,255,.62);
   display:grid;place-items:center;cursor:pointer;
   box-shadow:0 .3em .7em rgba(0,0,0,.3), inset 0 0 1.4em rgba(255,255,255,.08);
   backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:transform .06s,background .06s}
-.oct{width:11.6em;height:11.6em;border-radius:1.7em;
+.oct{width:11.6em;height:11.6em;min-width:56px;min-height:56px;border-radius:1.7em;
   clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
-.rnd{width:12.9em;height:12.9em;border-radius:50%}
+.rnd{width:12.9em;height:12.9em;min-width:62px;min-height:62px;border-radius:50%}
 .oct svg,.rnd svg{width:5.6em;height:5.6em;fill:rgba(255,255,255,.88);
   filter:drop-shadow(0 .15em .2em rgba(0,0,0,.45))}
 .rnd .sw{width:6.8em;height:6.8em}
@@ -264,6 +269,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
   padding:.45em 1.6em;border-radius:.5em;background:linear-gradient(180deg,#8ee85f,#3f9c2c);
   box-shadow:0 .12em 0 #2b6b1e}
 
+/* ===================== НИЗКИЕ ЭКРАНЫ (телефон в альбоме) ===================== */
+@media (max-height: 480px) {
+  .hud-bl, .hud-br { bottom: max(5em, env(safe-area-inset-bottom)); gap: 3.6em }
+  .hud-bl { left: max(4em, env(safe-area-inset-left)) }
+  .hud-br { right: max(4em, env(safe-area-inset-right)) }
+  .oct { width: 13.5em; height: 13.5em }
+  .rnd { width: 14.5em; height: 14.5em }
+  .hud-tl { left: max(2.4em, env(safe-area-inset-left)); top: 1.2em; gap: 1.2em }
+  .hud-tr { right: max(1.6em, env(safe-area-inset-right)); top: 1.4em; gap: 1.1em }
+  /* счётчики крупнее, иначе на мелком экране цифры не прочитать */
+  .pill { height: 6.8em; padding: 0 2em 0 1.2em; gap: .9em }
+  .pill .icn { width: 5.2em; height: 5.2em }
+  .pill span { font-size: 3.3em }
+  .timer { height: 6em; padding: 0 2em 0 1.4em }
+  .timer .clk { width: 4em; height: 4em }
+  .timer span { font-size: 3.1em }
+  .bossbar { top: 10.5em; width: 60em }
+  .boss-name { font-size: 2.6em }
+  .toast { top: calc(var(--u) * 30) }
+  .toast .tt { font-size: calc(var(--u) * 3) }
+  .toast .ts { font-size: calc(var(--u) * 2.1) }
+  .hearts svg { width: 5em; height: 5em }
+  .stamina { width: 26em; height: 4.2em }
+  .portrait { width: 13em; height: 13em }
+  .buffs { height: 6em }
+  .buff { width: 6em; height: 6em }
+  .screen .panel { padding: 2.4em 2em 2em }
+  .screen h1 { font-size: 4.2em }
+  .bigface { width: 8.5em; height: 8.5em; margin-bottom: 1.2em }
+  .keys { margin: 1.4em 0 .4em; gap: .8em }
+  .keys div { min-width: 7.5em; padding: .7em .6em }
+  .big-btn { margin-top: 1.4em; font-size: 2.6em }
+  .card .cd { min-height: 3.4em }
+}
+
+/* ===================== ЭКРАН СМЕРТИ ===================== */
+#scrDeath{background:radial-gradient(120% 90% at 50% 40%,rgba(58,14,14,.72),rgba(6,4,4,.94))}
+#scrDeath h1{color:#ff8a7a;text-shadow:0 .06em .1em #000,0 0 .6em rgba(226,59,59,.4)}
+.deaths{display:flex;align-items:baseline;justify-content:center;gap:.7em;margin-top:1.6em}
+.deaths span{color:#9fb6c6;font-size:1.9em}
+.deaths b{color:#ff8a7a;font-size:3em;font-variant-numeric:tabular-nums}
+
 </style>
 
 <div id="stage">
@@ -287,6 +334,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
     <div class="hud-tr">
       <div class="pill"><canvas class="icn" id="icnCoin" width="32" height="32"></canvas><span id="coinVal">0</span></div>
       <div class="pill"><canvas class="icn" id="icnGem" width="32" height="32"></canvas><span id="gemVal">0</span></div>
+      <button class="btn-ico fs" id="btnFs" aria-label="Fullscreen"><svg viewBox="0 0 24 24">
+        <path class="fs-in" d="M3.4 9.2V4.6a1.2 1.2 0 0 1 1.2-1.2h4.6v2.4H5.8v3.4zM20.6 9.2h-2.4V5.8h-3.4V3.4h4.6a1.2 1.2 0 0 1 1.2 1.2zM3.4 14.8h2.4v3.4h3.4v2.4H4.6a1.2 1.2 0 0 1-1.2-1.2zM20.6 14.8v4.6a1.2 1.2 0 0 1-1.2 1.2h-4.6v-2.4h3.4v-3.4z"/>
+        <path class="fs-out" d="M9.2 3.4v4.6a1.2 1.2 0 0 1-1.2 1.2H3.4V6.8h3.4V3.4zM14.8 3.4h2.4v3.4h3.4v2.4H16a1.2 1.2 0 0 1-1.2-1.2zM9.2 20.6H6.8v-3.4H3.4v-2.4H8a1.2 1.2 0 0 1 1.2 1.2zM14.8 20.6V16a1.2 1.2 0 0 1 1.2-1.2h4.6v2.4h-3.4v3.4z"/>
+      </svg></button>
       <button class="btn-ico" id="btnShopHud" aria-label="Shop"><svg viewBox="0 0 24 24"><path d="M7.3 10.1c1.4-1 3-1.5 4.7-1.5s3.3.5 4.7 1.5c2 1.5 3.1 3.5 3.1 5.6 0 3-3.5 5.2-7.8 5.2s-7.8-2.2-7.8-5.2c0-2.1 1.1-4.1 3.1-5.6z"/><path d="M9.2 9.3 6.5 3.6l4.3 2.5M14.8 9.3l2.7-5.7-4.3 2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="12" cy="15.6" r="2.4" fill="#0d1218"/><path d="M12 13.9v3.4M10.9 14.6h2.2" stroke="#ffd970" stroke-width="1" stroke-linecap="round"/></svg></button>
       <button class="btn-pause" id="btnPause" aria-label="Pause"><i></i><i></i></button>
     </div>
@@ -347,6 +398,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
       <table class="score" id="scoreTable"></table>
       <div class="total"><span data-i18n="total">ИТОГО</span><b id="totalScore">0</b></div>
       <button class="big-btn" id="btnAgain" data-i18n="toShop">В ЛАВКУ</button>
+    </div>
+  </div>
+
+  <!-- ===== СМЕРТЬ ===== -->
+  <div class="screen" id="scrDeath">
+    <div class="panel">
+      <h1 id="deathTitle">Ты пал…</h1>
+      <p class="sub" data-i18n="deathSub">Всё, что пройдено после флага, придётся пройти заново</p>
+      <p class="deaths"><span data-i18n="deathsSoFar">Смертей за забег</span><b id="deathCount">1</b></p>
+      <button class="big-btn" id="btnRespawn" data-i18n="toCheckpoint">НА КОНТРОЛЬНУЮ ТОЧКУ</button>
+      <button class="big-btn ghost" id="btnOver" data-i18n="startOver">НАЧАТЬ СНАЧАЛА</button>
     </div>
   </div>
 
@@ -426,6 +488,9 @@ const LANGS = {
 
     cpTitle: 'Контрольная точка', cpSub: 'прогресс сохранён',
     fell: 'Провалился!', died: 'Ты пал…', backToCp: 'откат к контрольной точке',
+    deathSub: 'Всё, что пройдено после флага, придётся пройти заново',
+    toCheckpoint: 'НА КОНТРОЛЬНУЮ ТОЧКУ', startOver: 'НАЧАТЬ СНАЧАЛА',
+    deathsSoFar: 'Смертей за забег',
     shieldBreak: 'Щит разбит', shieldBreakSub: 'удар поглощён',
 
     puHeart: 'Сердце', puHeartSub: '+1 к здоровью',
@@ -486,6 +551,9 @@ const LANGS = {
 
     cpTitle: 'Checkpoint', cpSub: 'progress saved',
     fell: 'You fell!', died: 'You died…', backToCp: 'rolled back to checkpoint',
+    deathSub: 'Everything past the flag has to be done again',
+    toCheckpoint: 'TO CHECKPOINT', startOver: 'START OVER',
+    deathsSoFar: 'Deaths this run',
     shieldBreak: 'Shield broken', shieldBreakSub: 'one hit absorbed',
 
     puHeart: 'Heart', puHeartSub: '+1 health',
@@ -2153,7 +2221,11 @@ function makeRuin(W, H, seed) {
 ============================================================ */
 'use strict';
 
-const VW = 480, VH = 270;          // логическое разрешение кадра
+/* Логическое разрешение кадра. Высота фиксированная, ширина подстраивается
+   под пропорции экрана — на широком телефоне видно больше мира, а не чёрные поля. */
+const VH = 270;
+let VW = 480;
+const VW_MIN = 448, VW_MAX = 672;
 
 /* дуга монет */
 function coinArc(x0, y0, n, dx, lift) {
@@ -3113,8 +3185,23 @@ function damage(n, srcX) {
 
 function die(fell) {
   G.deaths++;
-  banner('death', fell ? T('fell') : T('died'), T('backToCp'));
+  hero.inv = 99999;                 // пока висит экран, ничего добить не может
+  hero.vx = 0; hero.vy = 0;
+  G.mode = MODE.PAUSE;
+  clearTouch();
+  shocks.length = 0;
+  scr('deathTitle').dataset.fell = fell ? '1' : '0';
+  scr('deathTitle').textContent = fell ? T('fell') : T('died');
+  document.getElementById('deathCount').textContent = G.deaths;
+  showScreen('scrDeath');
+}
+
+/* возродиться на последнем флаге */
+function respawnAtCheckpoint() {
   restoreSnapshot();
+  G.mode = MODE.PLAY;
+  showScreen(null);
+  banner('checkpoint', T('cpTitle'), T('backToCp'));
 }
 
 const PU_KEY = { heart: 'puHeart', shield: 'puShield', boots: 'puBoots', rage: 'puRage' };
@@ -3647,9 +3734,32 @@ function drawFaceIcon() {
   ig.drawImage(gi.c, 0, 0, 16, 16, 0, 8, 32, 32);
 }
 
-/* ---------------- размеры ---------------- */
+/* ---------------- размеры и полный экран ---------------- */
+
+/* Реальная видимая область. Во встроенных браузерах innerHeight часто больше
+   того, что видно под панелью, поэтому берём минимум из доступных источников. */
+function viewportSize() {
+  const vv = window.visualViewport;
+  const de = document.documentElement;
+  let w = innerWidth, h = innerHeight;
+  if (de && de.clientWidth) { w = Math.min(w, de.clientWidth); h = Math.min(h, de.clientHeight); }
+  if (vv) { w = Math.min(w, vv.width); h = Math.min(h, vv.height); }
+  return { w: Math.max(240, Math.round(w)), h: Math.max(160, Math.round(h)) };
+}
+
 function resize() {
-  const W = innerWidth, H = innerHeight;
+  const { w: W, h: H } = viewportSize();
+
+  /* ширина кадра под пропорции экрана, чтобы не было чёрных полей по бокам */
+  let want = Math.round(VH * (W / H) / 2) * 2;
+  want = Math.max(VW_MIN, Math.min(VW_MAX, want));
+  if (want !== VW) {
+    VW = want;
+    cvs.width = VW;
+    ctx.imageSmoothingEnabled = false;
+    G.cam = Math.max(0, Math.min(LEVEL.width - VW, G.cam));
+  }
+
   const s = Math.min(W / VW, H / VH);
   const w = Math.round(VW * s), h = Math.round(VH * s);
   cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
@@ -3658,13 +3768,52 @@ function resize() {
   hud.style.setProperty('--u', (h / 100) + 'px');
   document.querySelectorAll('.screen').forEach(el => el.style.setProperty('--u', (h / 100) + 'px'));
 }
+
 addEventListener('resize', resize);
-addEventListener('orientationchange', () => setTimeout(resize, 120));
+addEventListener('orientationchange', () => { resize(); setTimeout(resize, 250); });
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', resize);
+  visualViewport.addEventListener('scroll', resize);
+}
+document.addEventListener('fullscreenchange', () => { setTimeout(resize, 120); syncFsButton(); });
+
+/* полный экран + попытка зафиксировать альбомную ориентацию */
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
+
+async function enterFullscreen() {
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch (e) { /* браузер не дал — играем как есть */ }
+  try {
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) { /* блокировка ориентации необязательна */ }
+  setTimeout(resize, 200);
+}
+
+async function exitFullscreen() {
+  try {
+    if (document.exitFullscreen) await document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch (e) { /* ignore */ }
+  setTimeout(resize, 200);
+}
+
+function toggleFullscreen() { fsElement() ? exitFullscreen() : enterFullscreen(); }
+
+function syncFsButton() {
+  const b = document.getElementById('btnFs');
+  if (b) b.classList.toggle('is-on', !!fsElement());
+}
 
 /* ---------------- экраны ---------------- */
 const scr = id => document.getElementById(id);
 function showScreen(id) {
-  ['scrStart', 'scrEnd', 'scrPause', 'scrShop', 'scrTalent'].forEach(k => scr(k).classList.toggle('on', k === id));
+  ['scrStart', 'scrEnd', 'scrPause', 'scrShop', 'scrTalent', 'scrDeath']
+    .forEach(k => scr(k).classList.toggle('on', k === id));
   // HUD виден только в самом забеге
   document.getElementById('hud').style.visibility = id ? 'hidden' : 'visible';
 }
@@ -3736,6 +3885,7 @@ function takeTalent(t) {
 }
 
 function startGame() {
+  if (isTouch && !fsElement()) enterFullscreen();
   talentQueue = 0;
   resetRun(true);
   G.mode = MODE.PLAY;
@@ -3876,6 +4026,9 @@ document.getElementById('btnShopHud').addEventListener('click', () => openShop('
 document.getElementById('btnResume').addEventListener('click', togglePause);
 document.getElementById('btnRestart').addEventListener('click', startGame);
 document.getElementById('btnPause').addEventListener('click', togglePause);
+document.getElementById('btnFs').addEventListener('click', toggleFullscreen);
+document.getElementById('btnRespawn').addEventListener('click', respawnAtCheckpoint);
+document.getElementById('btnOver').addEventListener('click', startGame);
 
 /* ---------------- язык ---------------- */
 document.querySelectorAll('.lang-btn').forEach(b => {
@@ -3884,6 +4037,9 @@ document.querySelectorAll('.lang-btn').forEach(b => {
 function onLangChange() {
   buildHearts(); setHud();
   if (G.mode === MODE.END) endGame();
+  if (document.getElementById('scrDeath').classList.contains('on')) {
+    scr('deathTitle').textContent = T(scr('deathTitle').dataset.fell === '1' ? 'fell' : 'died');
+  }
   if (document.getElementById('scrShop').classList.contains('on')) {
     document.getElementById('btnRun').textContent = T(shopFrom === 'play' ? 'resume' : 'startRun');
     renderShop();

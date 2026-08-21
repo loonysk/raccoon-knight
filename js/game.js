@@ -704,8 +704,23 @@ function damage(n, srcX) {
 
 function die(fell) {
   G.deaths++;
-  banner('death', fell ? T('fell') : T('died'), T('backToCp'));
+  hero.inv = 99999;                 // пока висит экран, ничего добить не может
+  hero.vx = 0; hero.vy = 0;
+  G.mode = MODE.PAUSE;
+  clearTouch();
+  shocks.length = 0;
+  scr('deathTitle').dataset.fell = fell ? '1' : '0';
+  scr('deathTitle').textContent = fell ? T('fell') : T('died');
+  document.getElementById('deathCount').textContent = G.deaths;
+  showScreen('scrDeath');
+}
+
+/* возродиться на последнем флаге */
+function respawnAtCheckpoint() {
   restoreSnapshot();
+  G.mode = MODE.PLAY;
+  showScreen(null);
+  banner('checkpoint', T('cpTitle'), T('backToCp'));
 }
 
 const PU_KEY = { heart: 'puHeart', shield: 'puShield', boots: 'puBoots', rage: 'puRage' };
@@ -1238,9 +1253,32 @@ function drawFaceIcon() {
   ig.drawImage(gi.c, 0, 0, 16, 16, 0, 8, 32, 32);
 }
 
-/* ---------------- размеры ---------------- */
+/* ---------------- размеры и полный экран ---------------- */
+
+/* Реальная видимая область. Во встроенных браузерах innerHeight часто больше
+   того, что видно под панелью, поэтому берём минимум из доступных источников. */
+function viewportSize() {
+  const vv = window.visualViewport;
+  const de = document.documentElement;
+  let w = innerWidth, h = innerHeight;
+  if (de && de.clientWidth) { w = Math.min(w, de.clientWidth); h = Math.min(h, de.clientHeight); }
+  if (vv) { w = Math.min(w, vv.width); h = Math.min(h, vv.height); }
+  return { w: Math.max(240, Math.round(w)), h: Math.max(160, Math.round(h)) };
+}
+
 function resize() {
-  const W = innerWidth, H = innerHeight;
+  const { w: W, h: H } = viewportSize();
+
+  /* ширина кадра под пропорции экрана, чтобы не было чёрных полей по бокам */
+  let want = Math.round(VH * (W / H) / 2) * 2;
+  want = Math.max(VW_MIN, Math.min(VW_MAX, want));
+  if (want !== VW) {
+    VW = want;
+    cvs.width = VW;
+    ctx.imageSmoothingEnabled = false;
+    G.cam = Math.max(0, Math.min(LEVEL.width - VW, G.cam));
+  }
+
   const s = Math.min(W / VW, H / VH);
   const w = Math.round(VW * s), h = Math.round(VH * s);
   cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
@@ -1249,13 +1287,52 @@ function resize() {
   hud.style.setProperty('--u', (h / 100) + 'px');
   document.querySelectorAll('.screen').forEach(el => el.style.setProperty('--u', (h / 100) + 'px'));
 }
+
 addEventListener('resize', resize);
-addEventListener('orientationchange', () => setTimeout(resize, 120));
+addEventListener('orientationchange', () => { resize(); setTimeout(resize, 250); });
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', resize);
+  visualViewport.addEventListener('scroll', resize);
+}
+document.addEventListener('fullscreenchange', () => { setTimeout(resize, 120); syncFsButton(); });
+
+/* полный экран + попытка зафиксировать альбомную ориентацию */
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
+
+async function enterFullscreen() {
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch (e) { /* браузер не дал — играем как есть */ }
+  try {
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) { /* блокировка ориентации необязательна */ }
+  setTimeout(resize, 200);
+}
+
+async function exitFullscreen() {
+  try {
+    if (document.exitFullscreen) await document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch (e) { /* ignore */ }
+  setTimeout(resize, 200);
+}
+
+function toggleFullscreen() { fsElement() ? exitFullscreen() : enterFullscreen(); }
+
+function syncFsButton() {
+  const b = document.getElementById('btnFs');
+  if (b) b.classList.toggle('is-on', !!fsElement());
+}
 
 /* ---------------- экраны ---------------- */
 const scr = id => document.getElementById(id);
 function showScreen(id) {
-  ['scrStart', 'scrEnd', 'scrPause', 'scrShop', 'scrTalent'].forEach(k => scr(k).classList.toggle('on', k === id));
+  ['scrStart', 'scrEnd', 'scrPause', 'scrShop', 'scrTalent', 'scrDeath']
+    .forEach(k => scr(k).classList.toggle('on', k === id));
   // HUD виден только в самом забеге
   document.getElementById('hud').style.visibility = id ? 'hidden' : 'visible';
 }
@@ -1327,6 +1404,7 @@ function takeTalent(t) {
 }
 
 function startGame() {
+  if (isTouch && !fsElement()) enterFullscreen();
   talentQueue = 0;
   resetRun(true);
   G.mode = MODE.PLAY;
@@ -1467,6 +1545,9 @@ document.getElementById('btnShopHud').addEventListener('click', () => openShop('
 document.getElementById('btnResume').addEventListener('click', togglePause);
 document.getElementById('btnRestart').addEventListener('click', startGame);
 document.getElementById('btnPause').addEventListener('click', togglePause);
+document.getElementById('btnFs').addEventListener('click', toggleFullscreen);
+document.getElementById('btnRespawn').addEventListener('click', respawnAtCheckpoint);
+document.getElementById('btnOver').addEventListener('click', startGame);
 
 /* ---------------- язык ---------------- */
 document.querySelectorAll('.lang-btn').forEach(b => {
@@ -1475,6 +1556,9 @@ document.querySelectorAll('.lang-btn').forEach(b => {
 function onLangChange() {
   buildHearts(); setHud();
   if (G.mode === MODE.END) endGame();
+  if (document.getElementById('scrDeath').classList.contains('on')) {
+    scr('deathTitle').textContent = T(scr('deathTitle').dataset.fell === '1' ? 'fell' : 'died');
+  }
   if (document.getElementById('scrShop').classList.contains('on')) {
     document.getElementById('btnRun').textContent = T(shopFrom === 'play' ? 'resume' : 'startRun');
     renderShop();

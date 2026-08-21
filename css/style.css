@@ -1,10 +1,11 @@
 /* ---------- база ---------- */
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#0a0d12;
+  overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;touch-action:none}
 
-#stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+#stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
 
 #game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -15,7 +16,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 #hud *{pointer-events:auto}
 
 /* ===================== ЛЕВЫЙ ВЕРХ ===================== */
-.hud-tl{position:absolute;left:4em;top:1.6em;display:flex;align-items:flex-start;gap:1.8em;
+.hud-tl{position:absolute;left:max(4em,env(safe-area-inset-left));top:1.6em;display:flex;align-items:flex-start;gap:1.8em;
   font-size:var(--u)}
 
 .portrait{position:relative;width:12em;height:12em;border-radius:1.2em;
@@ -63,7 +64,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* ===================== ПРАВЫЙ ВЕРХ ===================== */
-.hud-tr{position:absolute;right:2.5em;top:2.2em;display:flex;align-items:center;gap:1.2em;
+.hud-tr{position:absolute;right:max(2.5em,env(safe-area-inset-right));top:2.2em;display:flex;align-items:center;gap:1.2em;
   font-size:var(--u)}
 .pill{display:flex;align-items:center;gap:.7em;height:5.8em;padding:0 1.7em 0 1em;
   border-radius:2.9em;background:rgba(14,19,28,.55);
@@ -73,14 +74,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 .pill span{color:#fff;font-weight:700;font-size:2.75em;line-height:1;letter-spacing:.02em;
   text-shadow:0 .06em .12em rgba(0,0,0,.95),0 0 .2em rgba(0,0,0,.7)}
 
-.btn-ico{width:6.4em;height:6.4em;border-radius:1.7em;background:rgba(14,19,28,.5);
+.btn-ico{font-size:inherit;width:6.4em;height:6.4em;min-width:38px;min-height:38px;border-radius:1.7em;background:rgba(14,19,28,.5);
   border:.3em solid rgba(255,255,255,.72);display:grid;place-items:center;cursor:pointer;
   box-shadow:0 .3em .6em rgba(0,0,0,.35);transition:transform .07s,background .07s}
 .btn-ico:active{transform:scale(.94);background:rgba(255,255,255,.2)}
 .btn-ico svg{width:4em;height:4em;fill:#ffd970;color:#ffd970;
   filter:drop-shadow(0 .12em .15em rgba(0,0,0,.6))}
+.btn-ico.fs svg{fill:#cfe0ec;color:#cfe0ec;width:3.7em;height:3.7em}
+.btn-ico.fs .fs-out{display:none}
+.btn-ico.fs.is-on .fs-in{display:none}
+.btn-ico.fs.is-on .fs-out{display:block}
 
-.btn-pause{width:6.4em;height:6.4em;border-radius:1.7em;background:rgba(14,19,28,.5);
+.btn-pause{font-size:inherit;width:6.4em;height:6.4em;min-width:38px;min-height:38px;border-radius:1.7em;background:rgba(14,19,28,.5);
   border:.3em solid rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;
   gap:.7em;cursor:pointer;box-shadow:0 .3em .6em rgba(0,0,0,.35)}
 .btn-pause i{width:.8em;height:3em;border-radius:.2em;background:#fff;display:block}
@@ -131,17 +136,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
   border-left:calc(var(--u)*.16) solid rgba(255,255,255,.18);padding-left:calc(var(--u)*1.1)}
 
 /* ===================== УПРАВЛЕНИЕ ===================== */
-.hud-bl,.hud-br{position:absolute;bottom:9.4em;display:flex;align-items:center;font-size:var(--u)}
-.hud-bl{left:7.6em;gap:5.1em}
-.hud-br{right:9.6em;gap:4.9em}
+.hud-bl,.hud-br{position:absolute;bottom:max(7em,env(safe-area-inset-bottom));display:flex;align-items:center;font-size:var(--u)}
+.hud-bl{left:max(6em,env(safe-area-inset-left));gap:5.1em}
+.hud-br{right:max(6em,env(safe-area-inset-right));gap:4.9em}
 
-.oct,.rnd{background:rgba(150,170,190,.16);border:.3em solid rgba(255,255,255,.62);
+.oct,.rnd{font-size:inherit;background:rgba(150,170,190,.16);border:.3em solid rgba(255,255,255,.62);
   display:grid;place-items:center;cursor:pointer;
   box-shadow:0 .3em .7em rgba(0,0,0,.3), inset 0 0 1.4em rgba(255,255,255,.08);
   backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:transform .06s,background .06s}
-.oct{width:11.6em;height:11.6em;border-radius:1.7em;
+.oct{width:11.6em;height:11.6em;min-width:56px;min-height:56px;border-radius:1.7em;
   clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
-.rnd{width:12.9em;height:12.9em;border-radius:50%}
+.rnd{width:12.9em;height:12.9em;min-width:62px;min-height:62px;border-radius:50%}
 .oct svg,.rnd svg{width:5.6em;height:5.6em;fill:rgba(255,255,255,.88);
   filter:drop-shadow(0 .15em .2em rgba(0,0,0,.45))}
 .rnd .sw{width:6.8em;height:6.8em}
@@ -261,3 +266,45 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0d12;
 #scrTalent .card .pick{margin-top:.5em;font-size:1.7em;color:#0f1a12;font-weight:700;
   padding:.45em 1.6em;border-radius:.5em;background:linear-gradient(180deg,#8ee85f,#3f9c2c);
   box-shadow:0 .12em 0 #2b6b1e}
+
+/* ===================== НИЗКИЕ ЭКРАНЫ (телефон в альбоме) ===================== */
+@media (max-height: 480px) {
+  .hud-bl, .hud-br { bottom: max(5em, env(safe-area-inset-bottom)); gap: 3.6em }
+  .hud-bl { left: max(4em, env(safe-area-inset-left)) }
+  .hud-br { right: max(4em, env(safe-area-inset-right)) }
+  .oct { width: 13.5em; height: 13.5em }
+  .rnd { width: 14.5em; height: 14.5em }
+  .hud-tl { left: max(2.4em, env(safe-area-inset-left)); top: 1.2em; gap: 1.2em }
+  .hud-tr { right: max(1.6em, env(safe-area-inset-right)); top: 1.4em; gap: 1.1em }
+  /* счётчики крупнее, иначе на мелком экране цифры не прочитать */
+  .pill { height: 6.8em; padding: 0 2em 0 1.2em; gap: .9em }
+  .pill .icn { width: 5.2em; height: 5.2em }
+  .pill span { font-size: 3.3em }
+  .timer { height: 6em; padding: 0 2em 0 1.4em }
+  .timer .clk { width: 4em; height: 4em }
+  .timer span { font-size: 3.1em }
+  .bossbar { top: 10.5em; width: 60em }
+  .boss-name { font-size: 2.6em }
+  .toast { top: calc(var(--u) * 30) }
+  .toast .tt { font-size: calc(var(--u) * 3) }
+  .toast .ts { font-size: calc(var(--u) * 2.1) }
+  .hearts svg { width: 5em; height: 5em }
+  .stamina { width: 26em; height: 4.2em }
+  .portrait { width: 13em; height: 13em }
+  .buffs { height: 6em }
+  .buff { width: 6em; height: 6em }
+  .screen .panel { padding: 2.4em 2em 2em }
+  .screen h1 { font-size: 4.2em }
+  .bigface { width: 8.5em; height: 8.5em; margin-bottom: 1.2em }
+  .keys { margin: 1.4em 0 .4em; gap: .8em }
+  .keys div { min-width: 7.5em; padding: .7em .6em }
+  .big-btn { margin-top: 1.4em; font-size: 2.6em }
+  .card .cd { min-height: 3.4em }
+}
+
+/* ===================== ЭКРАН СМЕРТИ ===================== */
+#scrDeath{background:radial-gradient(120% 90% at 50% 40%,rgba(58,14,14,.72),rgba(6,4,4,.94))}
+#scrDeath h1{color:#ff8a7a;text-shadow:0 .06em .1em #000,0 0 .6em rgba(226,59,59,.4)}
+.deaths{display:flex;align-items:baseline;justify-content:center;gap:.7em;margin-top:1.6em}
+.deaths span{color:#9fb6c6;font-size:1.9em}
+.deaths b{color:#ff8a7a;font-size:3em;font-variant-numeric:tabular-nums}
