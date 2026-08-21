@@ -136,22 +136,46 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
   border-left:calc(var(--u)*.16) solid rgba(255,255,255,.18);padding-left:calc(var(--u)*1.1)}
 
 /* ===================== УПРАВЛЕНИЕ ===================== */
-.hud-bl,.hud-br{position:absolute;bottom:max(7em,env(safe-area-inset-bottom));display:flex;align-items:center;font-size:var(--u)}
-.hud-bl{left:max(6em,env(safe-area-inset-left));gap:5.1em}
-.hud-br{right:max(6em,env(safe-area-inset-right));gap:4.9em}
+.hud-br{position:absolute;bottom:max(6em,env(safe-area-inset-bottom));display:flex;align-items:center;font-size:var(--u);z-index:2}
+.hud-br{right:max(5em,env(safe-area-inset-right));gap:3.4em}
 
-.oct,.rnd{font-size:inherit;touch-action:none;-webkit-user-select:none;user-select:none;
-  -webkit-touch-callout:none;background:rgba(150,170,190,.16);border:.3em solid rgba(255,255,255,.62);
+.rnd{font-size:inherit;touch-action:none;-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;background:rgba(150,170,190,.16);
+  border:.3em solid rgba(255,255,255,.62);border-radius:50%;
   display:grid;place-items:center;cursor:pointer;
-  box-shadow:0 .3em .7em rgba(0,0,0,.3), inset 0 0 1.4em rgba(255,255,255,.08);
-  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:transform .06s,background .06s}
-.oct{width:11.6em;height:11.6em;min-width:56px;min-height:56px;border-radius:1.7em;
-  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
-.rnd{width:12.9em;height:12.9em;min-width:62px;min-height:62px;border-radius:50%}
-.oct svg,.rnd svg{width:5.6em;height:5.6em;fill:rgba(255,255,255,.88);
+  width:16.4em;height:16.4em;min-width:74px;min-height:74px;
+  box-shadow:0 .3em .7em rgba(0,0,0,.3), inset 0 0 1.6em rgba(255,255,255,.08);
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  transition:transform .06s,background .06s}
+.rnd svg{width:7.4em;height:7.4em;fill:rgba(255,255,255,.9);
   filter:drop-shadow(0 .15em .2em rgba(0,0,0,.45))}
-.rnd .sw{width:6.8em;height:6.8em}
-.oct.on,.rnd.on{background:rgba(255,255,255,.34);transform:scale(.94)}
+.rnd .sw{width:8.6em;height:8.6em}
+.rnd.on{background:rgba(255,255,255,.34);transform:scale(.93)}
+
+/* ---------- джойстик ---------- */
+.stick-zone{position:absolute;left:0;bottom:0;width:46%;height:74%;
+  touch-action:none;-webkit-user-select:none;user-select:none;z-index:1}
+.stick{position:absolute;font-size:var(--u);z-index:2;
+  left:max(5em,env(safe-area-inset-left));bottom:max(6em,env(safe-area-inset-bottom));
+  width:26em;height:26em;min-width:104px;min-height:104px;
+  display:grid;place-items:center;pointer-events:none;
+  transition:opacity .16s;opacity:.9}
+.stick.on{transition:none}
+.stick.on{opacity:1}
+.stick-ring{position:absolute;inset:0;border-radius:50%;
+  background:rgba(20,30,42,.26);border:.34em solid rgba(255,255,255,.6);
+  box-shadow:0 .3em .8em rgba(0,0,0,.45), inset 0 0 2em rgba(255,255,255,.1);
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.stick-hint{position:absolute;width:94%;height:auto;fill:rgba(255,255,255,.55);
+  filter:drop-shadow(0 .12em .16em rgba(0,0,0,.6));
+  pointer-events:none;transition:opacity .16s}
+.stick.on .stick-hint{opacity:0}
+.stick-knob{position:absolute;width:11.5em;height:11.5em;min-width:46px;min-height:46px;
+  border-radius:50%;background:radial-gradient(circle at 36% 32%,
+    rgba(255,255,255,.55),rgba(190,210,228,.32) 55%,rgba(120,145,170,.3));
+  border:.28em solid rgba(255,255,255,.72);
+  box-shadow:0 .25em .5em rgba(0,0,0,.4), inset 0 0 1em rgba(255,255,255,.3);
+  will-change:transform}
 
 /* ===================== ЭКРАНЫ ===================== */
 .screen{position:absolute;inset:0;display:none;place-items:center;z-index:20;
@@ -270,11 +294,14 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 
 /* ===================== НИЗКИЕ ЭКРАНЫ (телефон в альбоме) ===================== */
 @media (max-height: 480px) {
-  .hud-bl, .hud-br { bottom: max(5em, env(safe-area-inset-bottom)); gap: 3.6em }
-  .hud-bl { left: max(4em, env(safe-area-inset-left)) }
-  .hud-br { right: max(4em, env(safe-area-inset-right)) }
-  .oct { width: 13.5em; height: 13.5em }
-  .rnd { width: 14.5em; height: 14.5em }
+  .hud-br { bottom: max(4em, env(safe-area-inset-bottom));
+            right: max(3.5em, env(safe-area-inset-right)); gap: 2.6em }
+  .stick { bottom: max(4em, env(safe-area-inset-bottom)); left: max(3.5em, env(safe-area-inset-left)) }
+  .rnd { width: 18.5em; height: 18.5em }
+  .rnd svg { width: 8.4em; height: 8.4em }
+  .rnd .sw { width: 9.6em; height: 9.6em }
+  .stick { width: 29em; height: 29em }
+  .stick-knob { width: 13em; height: 13em }
   .hud-tl { left: max(2.4em, env(safe-area-inset-left)); top: 1.2em; gap: 1.2em }
   .hud-tr { right: max(1.6em, env(safe-area-inset-right)); top: 1.4em; gap: 1.1em }
   /* счётчики крупнее, иначе на мелком экране цифры не прочитать */

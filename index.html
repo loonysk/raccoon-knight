@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0d12">
 <title>Raccoon Knight</title>
-<link rel="stylesheet" href="css/style.css?v=26886259">
+<link rel="stylesheet" href="css/style.css?v=3f335417">
 </head>
 <body>
 <div id="stage">
@@ -55,10 +55,14 @@
     <div class="toast" id="toast"></div>
 
     <!-- НИЗ: управление -->
-    <div class="hud-bl">
-      <button class="oct" data-act="left" aria-label="Влево"><svg viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20 Z"/></svg></button>
-      <button class="oct" data-act="right" aria-label="Вправо"><svg viewBox="0 0 24 24"><path d="M9 4 L17 12 L9 20 Z"/></svg></button>
+    <!-- джойстик: зона касания и сам стик — прямые потомки HUD -->
+    <div class="stick-zone" id="stickZone"></div>
+    <div class="stick" id="stick">
+      <div class="stick-ring"></div>
+      <svg class="stick-hint" viewBox="0 0 48 24"><path d="M4 12 10 6.4v11.2zM44 12 38 6.4v11.2z"/></svg>
+      <div class="stick-knob" id="stickKnob"></div>
     </div>
+
     <div class="hud-br">
       <button class="rnd" data-act="attack" aria-label="Атака"><svg viewBox="0 0 24 24" class="sw"><g transform="rotate(-40 12 12)"><path d="M10.5 1.6h3l.8 10.6-2.3 2.6-2.3-2.6z"/><rect x="6.2" y="13.4" width="11.6" height="2.5" rx="1.1"/><rect x="10.6" y="15.7" width="2.8" height="4.4"/><circle cx="12" cy="21.2" r="2"/></g></svg></button>
       <button class="rnd gun" data-act="gun" id="btnGun" aria-label="Выстрел"><svg viewBox="0 0 24 24"><path d="M3 7.5h12.5l1.6 3.2H21a1 1 0 0 1 1 1v1.1a1 1 0 0 1-1 1h-4.3l-1.1 2.4a3 3 0 0 1-2.7 1.7H10a3 3 0 0 1-3-3v-1.4H5.2A2.2 2.2 0 0 1 3 12.3z"/><circle cx="8.6" cy="11" r="1.5" fill="#0d1218"/></svg></button>
@@ -153,13 +157,13 @@
   </div>
 </div>
 
-<script src="js/i18n.js?v=26886259"></script>
-<script src="js/pixel.js?v=26886259"></script>
-<script src="js/art.js?v=26886259"></script>
-<script src="js/art2.js?v=26886259"></script>
-<script src="js/bg.js?v=26886259"></script>
-<script src="js/level.js?v=26886259"></script>
-<script src="js/game.js?v=26886259"></script>
-<script src="js/reach.js?v=26886259"></script>
+<script src="js/i18n.js?v=3f335417"></script>
+<script src="js/pixel.js?v=3f335417"></script>
+<script src="js/art.js?v=3f335417"></script>
+<script src="js/art2.js?v=3f335417"></script>
+<script src="js/bg.js?v=3f335417"></script>
+<script src="js/level.js?v=3f335417"></script>
+<script src="js/game.js?v=3f335417"></script>
+<script src="js/reach.js?v=3f335417"></script>
 </body>
 </html>

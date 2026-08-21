@@ -131,7 +131,7 @@ const G = {
 const hero = {
   x: LEVEL.startX, y: LEVEL.startY, vx: 0, vy: 0, dir: 1, onGround: true,
   st: 'idle', anim: 0, atk: 0, atkLen: 26, atkHit: false, inv: 0,
-  air: 0, coyote: 0, buf: 0, puff: 0, mover: null,
+  air: 0, coyote: 0, buf: 0, puff: 0, cutLock: 0, mover: null,
   buffs: { shield: 0, boots: 0, rage: 0 }
 };
 
@@ -216,7 +216,7 @@ function resetRun(full) {
   hero.x = LEVEL.startX; hero.y = LEVEL.startY;
   hero.vx = hero.vy = 0; hero.dir = 1; hero.onGround = true;
   hero.st = 'idle'; hero.anim = 0; hero.atk = 0; hero.inv = 0;
-  hero.air = 0; hero.coyote = 0; hero.buf = 0; hero.puff = 0; hero.mover = null;
+  hero.air = 0; hero.coyote = 0; hero.buf = 0; hero.puff = 0; hero.cutLock = 0; hero.mover = null;
   hero.buffs.shield = hero.buffs.boots = hero.buffs.rage = 0;
 
   if (full) {
@@ -272,19 +272,20 @@ function moveBody(o, w, h) {
 }
 
 /* ---------------- ввод ----------------
-   Нажатия копятся отдельным «фронтом»: короткий тап между двумя кадрами
-   иначе терялся бы, потому что игровой цикл не увидел бы удержания.
-   Удержание нужно отдельно — от него зависит высота прыжка.
+   Нажатия копятся счётчиком: короткий тап между двумя кадрами иначе терялся бы,
+   а два быстрых тапа подряд схлопывались бы в один — из-за этого двойной прыжок
+   срабатывал через раз. Удержание держим отдельно, от него зависит высота прыжка.
 ------------------------------------------ */
 const K = {};
-const HOLD = { left: false, right: false, jump: false, attack: false, gun: false };
-const PRESS = { jump: false, attack: false, gun: false };   // фронт, гасится в update
+const HOLD = { jump: false, attack: false, gun: false };
+const PRESS = { jump: 0, attack: 0, gun: 0 };     // счётчик фронтов, гасится в update
+let stickX = 0;                                    // -1..1 с джойстика
 
 addEventListener('keydown', e => {
   if (!e.repeat) {
-    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') PRESS.jump = true;
-    if (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'Enter') PRESS.attack = true;
-    if (e.code === 'KeyK' || e.code === 'KeyC') PRESS.gun = true;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') PRESS.jump++;
+    if (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'Enter') PRESS.attack++;
+    if (e.code === 'KeyK' || e.code === 'KeyC') PRESS.gun++;
   }
   K[e.code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
@@ -293,22 +294,19 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { K[e.code] = false; });
 
-/* какой указатель какую кнопку держит — чтобы палец, съехавший с кнопки,
-   не оставлял её нажатой навсегда */
+/* какой указатель что держит — палец, съехавший с кнопки, не должен залипать */
 const pointerOn = new Map();
 
 document.querySelectorAll('[data-act]').forEach(btn => {
   const act = btn.dataset.act;
-
   btn.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { btn.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
     pointerOn.set(e.pointerId, act);
     HOLD[act] = true;
-    if (act in PRESS) PRESS[act] = true;
+    PRESS[act]++;
     btn.classList.add('on');
   });
-
   const release = e => {
     if (pointerOn.get(e.pointerId) !== act) return;
     pointerOn.delete(e.pointerId);
@@ -320,8 +318,70 @@ document.querySelectorAll('[data-act]').forEach(btn => {
   btn.addEventListener('lostpointercapture', release);
 });
 
-/* страховка: если указатель пропал мимо кнопки, всё равно отпускаем */
+/* ---------- джойстик ---------- */
+const stickEl = document.getElementById('stick');
+const knobEl = document.getElementById('stickKnob');
+const zoneEl = document.getElementById('stickZone');
+let stickId = null, stickOx = 0, stickOy = 0, stickHome = null;
+
+function stickRadius() {
+  return Math.max(28, stickEl.offsetWidth * 0.42);
+}
+
+function stickReset() {
+  stickId = null; stickX = 0;
+  stickEl.classList.remove('on');
+  knobEl.style.transform = '';
+  stickEl.style.left = '';
+  stickEl.style.top = '';
+  stickEl.style.bottom = '';
+  stickHome = null;
+}
+
+/* стик встаёт центром под палец; координаты — относительно HUD */
+function stickMoveTo(cx, cy) {
+  const hud = document.getElementById('hud').getBoundingClientRect();
+  const half = stickEl.offsetWidth / 2;
+  const x = Math.max(half, Math.min(hud.width - half, cx - hud.left));
+  const y = Math.max(half, Math.min(hud.height - half, cy - hud.top));
+  stickEl.style.bottom = 'auto';
+  stickEl.style.left = (x - half) + 'px';
+  stickEl.style.top = (y - half) + 'px';
+  stickHome = true;
+}
+
+function stickUpdate(e) {
+  const r = stickEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const R = stickRadius();
+  let dx = e.clientX - cx, dy = e.clientY - cy;
+  const d = Math.hypot(dx, dy);
+  if (d > R) { dx = dx / d * R; dy = dy / d * R; }
+  knobEl.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px)';
+  const nx = dx / R;
+  const DEAD = 0.16;
+  stickX = Math.abs(nx) < DEAD ? 0 : Math.sign(nx) * Math.min(1, (Math.abs(nx) - DEAD) / (1 - DEAD));
+}
+
+zoneEl.addEventListener('pointerdown', e => {
+  if (stickId !== null) return;
+  e.preventDefault();
+  stickId = e.pointerId;
+  try { zoneEl.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
+  stickOx = e.clientX; stickOy = e.clientY;
+  stickMoveTo(stickOx, stickOy);          // стик встаёт под палец
+  stickEl.classList.add('on');
+  stickUpdate(e);
+});
+zoneEl.addEventListener('pointermove', e => { if (e.pointerId === stickId) stickUpdate(e); });
+const stickEnd = e => { if (e.pointerId === stickId) stickReset(); };
+zoneEl.addEventListener('pointerup', stickEnd);
+zoneEl.addEventListener('pointercancel', stickEnd);
+zoneEl.addEventListener('lostpointercapture', stickEnd);
+
+/* страховка: указатель мог пропасть мимо элемента */
 const globalRelease = e => {
+  if (e.pointerId === stickId) stickReset();
   const act = pointerOn.get(e.pointerId);
   if (!act) return;
   pointerOn.delete(e.pointerId);
@@ -331,26 +391,28 @@ const globalRelease = e => {
 };
 addEventListener('pointerup', globalRelease);
 addEventListener('pointercancel', globalRelease);
-addEventListener('blur', () => {
-  pointerOn.clear();
-  for (const k in HOLD) HOLD[k] = false;
-  for (const k in K) K[k] = false;
-  document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on'));
-});
+addEventListener('blur', clearTouch);
 
 function clearTouch() {
   pointerOn.clear();
+  stickReset();
   for (const k in HOLD) HOLD[k] = false;
-  for (const k in PRESS) PRESS[k] = false;
+  for (const k in PRESS) PRESS[k] = 0;
+  for (const k in K) K[k] = false;
   document.querySelectorAll('[data-act]').forEach(b => b.classList.remove('on'));
 }
 
-function inLeft() { return K.ArrowLeft || K.KeyA || HOLD.left; }
-function inRight() { return K.ArrowRight || K.KeyD || HOLD.right; }
+/* ось движения: клавиатура даёт ±1, джойстик — плавно */
+function moveAxis() {
+  let k = 0;
+  if (K.ArrowLeft || K.KeyA) k -= 1;
+  if (K.ArrowRight || K.KeyD) k += 1;
+  if (k !== 0) return k;
+  return stickX;
+}
 function inJump() { return K.Space || K.ArrowUp || K.KeyW || HOLD.jump; }
 
-/* совместимость со старыми тестами и dev-утилитами */
-const TOUCH = HOLD;
+const TOUCH = HOLD;        // совместимость с dev-утилитами
 
 /* ---------------- вспомогательное ---------------- */
 function spark(x, y, n, col, spread) {
@@ -416,40 +478,43 @@ function update() {
   for (const k in hero.buffs) if (hero.buffs[k] > 0) hero.buffs[k]--;
   if (G.t % 10 === 0) renderBuffs();
 
-  if (PRESS.attack) {
-    PRESS.attack = false;
+  if (PRESS.attack > 0) {
+    PRESS.attack--;
     if (hero.atk <= 0) { hero.atk = hero.atkLen = Math.round(26 * (1 - G.tal.atkspd * .22)); hero.atkHit = false; }
   }
   if (hero.atk > 0) hero.atk--;
 
-  let mv = 0;
-  if (inLeft()) mv -= 1;
-  if (inRight()) mv += 1;
-  if (mv !== 0) hero.dir = mv;
+  const mv = moveAxis();
+  if (Math.abs(mv) > .01) hero.dir = mv > 0 ? 1 : -1;
   const slow = hero.atk > 8 ? .35 : 1;
   hero.vx = mv * RUN * slow * (boots ? 1.35 : 1) * (1 + G.tal.swift * .12);
+  const moving = Math.abs(mv) > .18;
 
   const jm = (boots ? 1.08 : 1) * (1 + G.tal.jump * .07);
   const jUp = JUMP * jm, j2Up = JUMP2 * jm;
   const j = inJump();
-  if (PRESS.jump) { PRESS.jump = false; hero.buf = BUFFER; }
+  if (PRESS.jump > 0) { PRESS.jump--; hero.buf = BUFFER; }
   if (hero.buf > 0) hero.buf--;
   if (hero.coyote > 0) hero.coyote--;
   if (hero.buf > 0) {
     if (hero.onGround || hero.coyote > 0) {
-      hero.vy = jUp; hero.onGround = false; hero.coyote = 0; hero.buf = 0; hero.air = 1; hero.mover = null;
+      hero.vy = jUp; hero.onGround = false; hero.coyote = 0; hero.buf = 0;
+      hero.air = 1; hero.mover = null; hero.cutLock = 6;
     } else if (hero.air < 2) {
-      hero.vy = j2Up; hero.air = 2; hero.buf = 0; hero.puff = 8;
+      hero.vy = j2Up; hero.air = 2; hero.buf = 0; hero.puff = 8; hero.cutLock = 6;
     }
   }
-  if (!j && hero.vy < jUp * 0.72) hero.vy = jUp * 0.72;
+  /* обрезаем прыжок при отпускании, но не в первые кадры —
+     иначе короткий тап на втором прыжке гасился в тот же кадр */
+  if (hero.cutLock > 0) hero.cutLock--;
+  else if (!j && hero.vy < jUp * 0.72) hero.vy = jUp * 0.72;
   if (hero.puff > 0) hero.puff--;
 
   /* пистоль */
   if (G.gunCd > 0) G.gunCd--;
   if (G.flash > 0) G.flash--;
-  const gfire = PRESS.gun;
-  PRESS.gun = false;
+  const gfire = PRESS.gun > 0;
+  if (gfire) PRESS.gun--;
   if (G.gunDmg > 0 && gfire && G.gunCd <= 0) {
     bolts.push({ x: hero.x + hero.dir * 16, y: hero.y - 24, vx: hero.dir * 5.4, life: 110, anim: 0, dir: hero.dir });
     G.gunCd = Math.round(40 * (1 - G.tal.atkspd * .18)); G.flash = 6;
@@ -473,9 +538,9 @@ function update() {
   let st = 'idle';
   if (hero.atk > 0) st = 'atk';
   else if (!hero.onGround) st = hero.vy < 0 ? 'jump' : 'fall';
-  else if (mv !== 0) st = 'run';
+  else if (moving) st = 'run';
   if (st !== hero.st) { hero.st = st; if (st !== 'atk') hero.anim = 0; }
-  hero.anim += (st === 'run') ? (boots ? .3 : .22) : .1;
+  hero.anim += (st === 'run') ? (boots ? .3 : .22) * Math.max(.55, Math.abs(mv)) : .1;
 
   /* ---- удар мечом ---- */
   if (hero.atk > 0 && hero.atk < hero.atkLen * .77 && !hero.atkHit) {
@@ -692,7 +757,7 @@ function update() {
   if (G.frames % 300 === 0) metaSave();          // кошелёк не теряется при закрытии вкладки
 
   /* ---- стамина ---- */
-  if (mv !== 0 || !hero.onGround) G.stam = Math.max(0, G.stam - .18);
+  if (moving || !hero.onGround) G.stam = Math.max(0, G.stam - .18);
   else G.stam = Math.min(100, G.stam + .5);
   document.getElementById('stamFill').style.width = G.stam + '%';
 
