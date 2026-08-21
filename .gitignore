@@ -1,0 +1,7 @@
+# рабочие снимки экрана из dev-утилит
+shots/
+
+# системное
+node_modules/
+.DS_Store
+Thumbs.db
