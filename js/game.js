@@ -281,11 +281,15 @@ const HOLD = { jump: false, attack: false, gun: false };
 const PRESS = { jump: 0, attack: 0, gun: 0 };     // счётчик фронтов, гасится в update
 let stickX = 0;                                    // -1..1 с джойстика
 
+/* Копим не больше двух нажатий: при частом тапе очередь иначе разрастается
+   и лишние нажатия срабатывают уже после приземления — выглядит как затуп. */
+function queuePress(k) { if (k in PRESS) PRESS[k] = Math.min(PRESS[k] + 1, 2); }
+
 addEventListener('keydown', e => {
   if (!e.repeat) {
-    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') PRESS.jump++;
-    if (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'Enter') PRESS.attack++;
-    if (e.code === 'KeyK' || e.code === 'KeyC') PRESS.gun++;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') queuePress('jump');
+    if (e.code === 'KeyJ' || e.code === 'KeyX' || e.code === 'Enter') queuePress('attack');
+    if (e.code === 'KeyK' || e.code === 'KeyC') queuePress('gun');
   }
   K[e.code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
@@ -304,7 +308,7 @@ document.querySelectorAll('[data-act]').forEach(btn => {
     try { btn.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
     pointerOn.set(e.pointerId, act);
     HOLD[act] = true;
-    PRESS[act]++;
+    queuePress(act);
     btn.classList.add('on');
   });
   const release = e => {
@@ -373,10 +377,12 @@ zoneEl.addEventListener('pointerdown', e => {
   stickEl.classList.add('on');
   stickUpdate(e);
 });
-zoneEl.addEventListener('pointermove', e => { if (e.pointerId === stickId) stickUpdate(e); });
+/* перемещение и отпускание слушаем на окне: палец может уйти с зоны,
+   а захват указателя срабатывает не во всех браузерах */
+addEventListener('pointermove', e => { if (e.pointerId === stickId) stickUpdate(e); }, { passive: false });
 const stickEnd = e => { if (e.pointerId === stickId) stickReset(); };
-zoneEl.addEventListener('pointerup', stickEnd);
-zoneEl.addEventListener('pointercancel', stickEnd);
+addEventListener('pointerup', stickEnd);
+addEventListener('pointercancel', stickEnd);
 zoneEl.addEventListener('lostpointercapture', stickEnd);
 
 /* страховка: указатель мог пропасть мимо элемента */
@@ -493,7 +499,13 @@ function update() {
   const jm = (boots ? 1.08 : 1) * (1 + G.tal.jump * .07);
   const jUp = JUMP * jm, j2Up = JUMP2 * jm;
   const j = inJump();
-  if (PRESS.jump > 0) { PRESS.jump--; hero.buf = BUFFER; }
+  if (PRESS.jump > 0) {
+    PRESS.jump--;
+    // прыжок сейчас невозможен и герой ещё летит вверх — нажатие гасим,
+    // иначе оно всплывёт лишним прыжком после приземления
+    const canNow = hero.onGround || hero.coyote > 0 || hero.air < 2;
+    if (canNow || hero.vy > 0) hero.buf = BUFFER;
+  }
   if (hero.buf > 0) hero.buf--;
   if (hero.coyote > 0) hero.coyote--;
   if (hero.buf > 0) {
